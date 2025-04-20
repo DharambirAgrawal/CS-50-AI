@@ -57,19 +57,20 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    new_corpus= corpus[page]
-    N = len(new_corpus)
+    N = len(corpus)
+    distribution = {}
 
-    if (N == 0):
-        return {p: 1 / len(corpus) for p in corpus}
+    links = corpus[page]
+    if not links:
+        # No links from the current page — treat it as linking to every page
+        return {p: 1 / N for p in corpus}
 
-    base = (1 - damping_factor) / len(corpus)
-    result = {p: base for p in corpus}
+    for p in corpus:
+        distribution[p] = (1 - damping_factor) / N
+        if p in links:
+            distribution[p] += damping_factor / len(links)
 
-    for c in new_corpus:
-        result[c] = result[c] + damping_factor/ N
-
-    return result
+    return distribution
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -85,14 +86,14 @@ def sample_pagerank(corpus, damping_factor, n):
 
     result = {p:0 for p in corpus}
 
-    result[current_page] += 1 
+    result[current_page] += 1
 
-    for i in range(n-1):
+    for _ in range(n-1):
         rank = transition_model(corpus, current_page, damping_factor)
         current_page = random.choices(
             population=list(rank.keys()),
             weights=list(rank.values()),
-            k=1 
+            k=1
         )[0]
 
         result[current_page] += 1
@@ -102,48 +103,37 @@ def sample_pagerank(corpus, damping_factor, n):
 
 
 
-
-
 def iterate_pagerank(corpus, damping_factor):
-    """
-    Return PageRank values for each page by iteratively updating
-    PageRank values until convergence.
-
-    Return a dictionary where keys are page names, and values are
-    their estimated PageRank value (a value between 0 and 1). All
-    PageRank values should sum to 1.
-    """
     N = len(corpus)
-    limit = 0.001
+    threshold = 0.001
+    pagerank = {page: 1 / N for page in corpus}
 
-    pageranks = {p: 1/N for p in corpus}
-    converged = False
-
-    while not converged:
-        new_rank = {}
-        converged = True
-
+    while True:
+        new_pagerank = {}
         for page in corpus:
-            new_ranks = (1 - damping_factor) / N
-
-            for possible_page in corpus:
-
-                links = corpus[possible_page]
+            rank_sum = 0
+            for other_page in corpus:
+                links = corpus[other_page]
                 if not links:
+                    # Treat as linking to every page
                     links = set(corpus.keys())
                 if page in links:
-                    new_rank += damping_factor * (pageranks[possible_page] / len(links))
-            new_ranks[page] = new_rank
+                    rank_sum += pagerank[other_page] / len(links)
 
-            # Check if change is within the threshold
-            if abs(new_ranks[page] - pageranks[page]) > limit:
-                converged = False
-        pageranks = new_ranks.copy()
-    total = sum(pageranks.values())
-    for page in pageranks:
-        pageranks[page] /= total
+            new_pagerank[page] = (1 - damping_factor) / N + damping_factor * rank_sum
 
-    return pageranks
+        # Check for convergence
+        if all(abs(new_pagerank[p] - pagerank[p]) < threshold for p in pagerank):
+            break
+        pagerank = new_pagerank
+
+    # Normalize to ensure they sum to 1
+    total = sum(pagerank.values())
+    for page in pagerank:
+        pagerank[page] /= total
+
+    return pagerank
+
 
 if __name__ == "__main__":
     main()
