@@ -131,14 +131,8 @@ def powerset(s):
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
     Compute and return a joint probability.
-
-    The probability returned should be the probability that
-        * everyone in set `one_gene` has one copy of the gene, and
-        * everyone in set `two_genes` has two copies of the gene, and
-        * everyone not in `one_gene` or `two_gene` does not have the gene, and
-        * everyone in set `have_trait` has the trait, and
-        * everyone not in set` have_trait` does not have the trait.
     """
+    probability = 1.0  # <-- Fix: initialize probability
 
     for person in people:
         if person in one_gene:
@@ -153,7 +147,6 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
         if mother is None and father is None:
             gene_prob = PROBS["gene"][genes]
-        
         else:
             def get_pass_prob(parent):
                 if parent in two_genes:
@@ -170,14 +163,14 @@ def joint_probability(people, one_gene, two_genes, have_trait):
                 gene_prob = mom_prob * (1 - dad_prob) + (1 - mom_prob) * dad_prob
             else:
                 gene_prob = (1 - mom_prob) * (1 - dad_prob)
+
         # Get trait probability
         trait_prob = PROBS["trait"][genes][has_trait]
 
         # Multiply to the joint probability
         probability *= gene_prob * trait_prob
-    
-    return probability
 
+    return probability
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
@@ -209,7 +202,7 @@ def normalize(probabilities):
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    
+
     for person in probabilities:
         # Normalize gene distribution
         gene_total = sum(probabilities[person]["gene"].values())
