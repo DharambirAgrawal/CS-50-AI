@@ -141,22 +141,13 @@ class CrosswordCreator():
 
 
     def ac3(self, arcs=None):
-        """
-        Update `self.domains` such that each variable is arc consistent.
-        If `arcs` is None, begin with initial list of all arcs in the problem.
-        Otherwise, use `arcs` as the initial list of arcs to make consistent.
-
-        Return True if arc consistency is enforced and no domains are empty;
-        return False if one or more domains end up empty.
-        """
         if arcs is None:
-            # Ensure `neighbors` is a dictionary, not a method
-             queue = [
-                (x, y)
-                for x in self.domains
-                if x in self.crossword.neighbors  # Ensure x is a key in neighbors
-                for y in self.crossword.neighbors[x]
-            ]
+            # Create queue of all arcs in the problem
+            queue = []
+            for x in self.domains:
+                # Get neighbors of x instead of checking if x is in neighbors
+                for y in self.crossword.neighbors(x):
+                    queue.append((x, y))
         else:
             queue = list(arcs)
 
@@ -165,12 +156,10 @@ class CrosswordCreator():
             if self.revise(x, y):
                 if not self.domains[x]:
                     return False
-                for z in self.crossword.neighbors[x]:  # Access neighbors as a dictionary
+                for z in self.crossword.neighbors(x):  # Call as a method
                     if z != y:
                         queue.append((z, x))
         return True
-
-
     def consistent(self, assignment):
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
@@ -182,7 +171,7 @@ class CrosswordCreator():
         for var, word in assignment.items():
             if len(word) != var.length:
                 return False
-            for neighbor in self.crossword.neighbors[var]:  # Access neighbors as a dictionary
+            for neighbor in self.crossword.neighbors(var):  # Call as a method
                 if neighbor not in assignment:
                     continue
                 overlap = self.crossword.overlaps.get((var, neighbor))
@@ -211,7 +200,7 @@ class CrosswordCreator():
         """
         def count_ruled_out(value):
             count = 0
-            for neighbor in self.crossword.neighbors[var]:
+            for neighbor in self.crossword.neighbors(var):  # Call as a method
                 if neighbor in assignment:
                     continue
                 overlap = self.crossword.overlaps.get((var, neighbor))
@@ -224,7 +213,6 @@ class CrosswordCreator():
             return count
 
         return sorted(self.domains[var], key=count_ruled_out)
-
 
     def select_unassigned_variable(self, assignment):
         """
@@ -239,8 +227,8 @@ class CrosswordCreator():
         return min(
             unassigned,
             key=lambda var: (
-                len(self.domains[var]),             # MRV
-                -len(self.crossword.neighbors[var]) # Degree heuristic (more neighbors is better)
+                len(self.domains[var]),           # MRV
+                -len(self.crossword.neighbors(var)) # Degree heuristic (more neighbors is better)
             )
         )
 
