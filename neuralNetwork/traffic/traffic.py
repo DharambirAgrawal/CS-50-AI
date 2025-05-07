@@ -58,7 +58,23 @@ def load_data(data_dir):
     be a list of integer labels, representing the categories for each of the
     corresponding `images`.
     """
-    raise NotImplementedError
+    images = []
+    labels = []
+
+    for category in range(NUM_CATEGORIES):
+        category_directory= os.path.join(data_dir, str(category))
+
+        if os.path.isdir(category_directory):
+            for filename in os.listdir(category_directory):
+                image_path= os.path.join(category_directory, filename)
+                image= cv2.imread(image_path)
+                if image is not None:
+                    image= cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
+                    image = image.astype("float32") / 255.0
+                    images.append(image)
+                    labels.append(category)
+    
+    return images, labels
 
 
 def get_model():
@@ -67,7 +83,35 @@ def get_model():
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
-    raise NotImplementedError
+    model= tf.keras.models.Sequential([
+        # convolutional layer
+
+        tf.keras.layers.Conv2D(
+            32,  (3,3), activation= "relu", input_shape=(IMG_WIDTH, IMG_HEIGHT, 3) # three colors
+        ),
+        # pooling
+        tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+        # input
+        tf.keras.layers.Flatten(),
+        # neural network
+        # hidden
+        tf.keras.layers.Dense(32, activation="relu"),
+        tf.keras.layers.Dense(64, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+
+        # output
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation="softmax")
+
+
+    ])
+
+    model.compile(
+        optimizer= "adam",
+        loss="categorical_crossentropy",
+        metrics= ["accuracy"]
+    )
+
+    return model
 
 
 if __name__ == "__main__":
